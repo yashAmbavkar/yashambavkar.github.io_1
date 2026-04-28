@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uber Trip Analytics — June 2024</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06070a;
+  --s1:#0d0f14;
+  --s2:#12151c;
+  --s3:#1a1e28;
+  --border:#1f2433;
+  --uber:#000000;
+  --lime:#b8ff47;
+  --cyan:#00d4ff;
+  --violet:#7c5cfc;
+  --amber:#ffb800;
+  --rose:#ff4d6d;
+  --text:#f0f2f7;
+  --muted:#525c73;
+  --sub:#8892a4;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:"Bricolage Grotesque",sans-serif;min-height:100vh}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,#0d0f14 0%,#111520 100%);
+  border-bottom:1px solid var(--border);
+  padding:20px 32px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{
+  width:36px;height:36px;background:#000;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand-icon svg{width:20px;height:20px;fill:#fff}
+.brand-name{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.brand-sub{font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace;letter-spacing:0.3px;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:12px}
+.pill{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:0.5px;
+  padding:5px 12px;border-radius:20px;font-weight:500;
+}
+.pill-lime{background:rgba(184,255,71,0.12);color:var(--lime);border:1px solid rgba(184,255,71,0.2)}
+.pill-cyan{background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.18)}
+
+/* FILTERS */
+.filters{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:10px 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.f-label{font-size:10px;color:var(--muted);font-family:"JetBrains Mono",monospace;letter-spacing:0.8px;white-space:nowrap}
+select{
+  background:var(--s2);border:1px solid var(--border);color:var(--text);
+  font-family:"Bricolage Grotesque",sans-serif;font-size:12px;
+  padding:5px 10px;border-radius:6px;cursor:pointer;outline:none;
+  transition:border-color .2s;
+}
+select:hover{border-color:rgba(184,255,71,0.35)}
+select:focus{border-color:var(--lime)}
+.f-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.btn-reset{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-size:11px;font-family:"Bricolage Grotesque",sans-serif;
+  padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .2s;margin-left:auto;
+}
+.btn-reset:hover{border-color:var(--lime);color:var(--lime)}
+
+/* MAIN */
+main{padding:24px 32px;max-width:1680px;margin:0 auto}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;position:relative;overflow:hidden;transition:transform .15s,border-color .2s;
+}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::after{content:"";position:absolute;bottom:0;left:0;right:0;height:2px}
+.kpi:nth-child(1)::after{background:var(--lime)}
+.kpi:nth-child(2)::after{background:var(--cyan)}
+.kpi:nth-child(3)::after{background:var(--violet)}
+.kpi:nth-child(4)::after{background:var(--amber)}
+.kpi:nth-child(5)::after{background:var(--rose)}
+.kpi-icon{font-size:18px;margin-bottom:10px;display:block}
+.kpi-val{font-size:24px;font-weight:600;letter-spacing:-0.5px;line-height:1;margin-bottom:4px}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-family:"JetBrains Mono",monospace}
+.kpi-sub{font-size:11px;color:var(--sub);margin-top:4px}
+
+/* GRID */
+.g{display:grid;gap:12px;margin-bottom:12px}
+.g-3{grid-template-columns:2fr 1fr 1fr}
+.g-2{grid-template-columns:1fr 1fr}
+.g-2b{grid-template-columns:3fr 2fr}
+.g-2c{grid-template-columns:1fr 1fr 1fr}
+
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s}
+.card:hover{border-color:rgba(124,92,252,0.2)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;letter-spacing:-0.2px}
+.card-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:"JetBrains Mono",monospace}
+.tag{
+  font-size:9px;font-family:"JetBrains Mono",monospace;letter-spacing:0.4px;
+  padding:3px 8px;border-radius:4px;font-weight:500;
+}
+.tag-lime{background:rgba(184,255,71,0.1);color:var(--lime);border:1px solid rgba(184,255,71,0.15)}
+.tag-cyan{background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.15)}
+.tag-violet{background:rgba(124,92,252,0.1);color:var(--violet);border:1px solid rgba(124,92,252,0.15)}
+.tag-amber{background:rgba(255,184,0,0.1);color:var(--amber);border:1px solid rgba(255,184,0,0.15)}
+.cw{position:relative;width:100%}
+
+/* SECTION */
+.sec{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* VEH TABLE */
+.veh-table{width:100%;border-collapse:collapse;font-size:12px}
+.veh-table th{font-size:9px;color:var(--muted);font-family:"JetBrains Mono",monospace;letter-spacing:0.5px;text-align:left;padding:0 0 10px;font-weight:500}
+.veh-table td{padding:8px 0;border-top:1px solid var(--border);color:var(--text);vertical-align:middle}
+.veh-table td:last-child{text-align:right;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--sub)}
+.veh-bar-wrap{width:80px;height:3px;background:var(--s3);border-radius:2px;display:inline-block;vertical-align:middle;margin-right:6px}
+.veh-bar{height:100%;border-radius:2px;display:block}
+.veh-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+
+/* PAX TABLE */
+.pax-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.pax-row:last-child{border-bottom:none}
+.pax-label{width:70px;font-size:12px;color:var(--sub)}
+.pax-bar-wrap{flex:1;height:6px;background:var(--s3);border-radius:3px}
+.pax-bar{height:100%;border-radius:3px;background:var(--violet)}
+.pax-val{width:50px;text-align:right;font-size:11px;font-family:"JetBrains Mono",monospace;color:var(--sub)}
+
+/* FOOTER */
+.footer{text-align:center;padding:20px;font-size:10px;color:var(--muted);font-family:"JetBrains Mono",monospace;border-top:1px solid var(--border);margin-top:20px;letter-spacing:0.3px}
+
+@media(max-width:960px){.g-3,.g-2,.g-2b,.g-2c{grid-template-columns:1fr}main,filters,header{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Uber Trip Analytics</div>
+      <div class="brand-sub">JUNE 2024 &nbsp;·&nbsp; NEW YORK OPERATIONS</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="pill pill-lime" id="hdr-trips">103,505 trips</span>
+    <span class="pill pill-cyan">June 2024</span>
+  </div>
+</header>
+
+<div class="filters">
+  <span class="f-label">FILTER</span>
+  <select id="f-veh" onchange="render()">
+    <option value="">All Vehicles</option>
+    <option>UberX</option><option>Uber Black</option><option>Uber Comfort</option><option>Uber Green</option><option>UberXL</option>
+  </select>
+  <div class="f-sep"></div>
+  <select id="f-pay" onchange="render()">
+    <option value="">All Payments</option>
+    <option>Uber Pay</option><option>Cash</option><option>Amazon Pay</option><option>Google Pay</option>
+  </select>
+  <div class="f-sep"></div>
+  <select id="f-pax" onchange="render()">
+    <option value="">All Passengers</option>
+    <option value="1">1 Passenger</option><option value="2">2 Passengers</option>
+    <option value="3">3 Passengers</option><option value="4+">4+ Passengers</option>
+  </select>
+  <div class="f-sep"></div>
+  <select id="f-surge" onchange="render()">
+    <option value="">All Trips</option>
+    <option value="1">Surge Only</option><option value="0">No Surge</option>
+  </select>
+  <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
+</div>
+
+<main>
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi"><span class="kpi-icon">🚗</span><div class="kpi-val" id="kpi-trips">—</div><div class="kpi-label">Total Trips</div><div class="kpi-sub" id="kpi-trips-sub">—</div></div>
+  <div class="kpi"><span class="kpi-icon">💵</span><div class="kpi-val" id="kpi-rev">—</div><div class="kpi-label">Total Revenue</div><div class="kpi-sub" id="kpi-rev-sub">—</div></div>
+  <div class="kpi"><span class="kpi-icon">💲</span><div class="kpi-val" id="kpi-fare">—</div><div class="kpi-label">Avg Fare</div><div class="kpi-sub" id="kpi-fare-sub">—</div></div>
+  <div class="kpi"><span class="kpi-icon">📍</span><div class="kpi-val" id="kpi-dist">—</div><div class="kpi-label">Avg Distance</div><div class="kpi-sub" id="kpi-dist-sub">—</div></div>
+  <div class="kpi"><span class="kpi-icon">⚡</span><div class="kpi-val" id="kpi-surge">—</div><div class="kpi-label">Surge Rate</div><div class="kpi-sub" id="kpi-surge-sub">—</div></div>
+</div>
+
+<div class="sec">TRIP TRENDS</div>
+<div class="g g-3">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Daily Trip Volume</div><div class="card-sub">TRIPS &amp; REVENUE PER DAY</div></div><span class="tag tag-lime">LINE</span></div>
+    <div class="cw" style="height:210px"><canvas id="dailyChart" role="img" aria-label="Daily trip volume and revenue line chart for June 2024"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Day of Week</div><div class="card-sub">TRIPS BY WEEKDAY</div></div><span class="tag tag-violet">BAR</span></div>
+    <div class="cw" style="height:210px"><canvas id="dowChart" role="img" aria-label="Trips by day of week bar chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Hourly Pattern</div><div class="card-sub">24-HOUR DEMAND CURVE</div></div><span class="tag tag-cyan">AREA</span></div>
+    <div class="cw" style="height:210px"><canvas id="hourChart" role="img" aria-label="Hourly trip demand area chart"></canvas></div>
+  </div>
+</div>
+
+<div class="sec">FLEET &amp; PAYMENT INSIGHTS</div>
+<div class="g g-2b">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Vehicle Performance</div><div class="card-sub">TRIPS &amp; REVENUE BY VEHICLE TYPE</div></div><span class="tag tag-lime">BREAKDOWN</span></div>
+    <table class="veh-table" id="vehTable">
+      <thead><tr><th>VEHICLE</th><th>TRIPS</th><th>SHARE</th><th>AVG FARE</th><th>REVENUE</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Payment Methods</div><div class="card-sub">TRANSACTION SPLIT</div></div><span class="tag tag-amber">DONUT</span></div>
+    <div class="cw" style="height:220px"><canvas id="payChart" role="img" aria-label="Payment method distribution donut chart"></canvas></div>
+  </div>
+</div>
+
+<div class="sec">FARE &amp; DISTANCE ANALYSIS</div>
+<div class="g g-2c">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Fare Distribution</div><div class="card-sub">TRIPS BY FARE BUCKET</div></div><span class="tag tag-violet">HISTOGRAM</span></div>
+    <div class="cw" style="height:200px"><canvas id="fareChart" role="img" aria-label="Fare distribution histogram"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Distance Buckets</div><div class="card-sub">TRIPS &amp; AVG FARE BY RANGE</div></div><span class="tag tag-cyan">BAR</span></div>
+    <div class="cw" style="height:200px"><canvas id="distChart" role="img" aria-label="Trip distance distribution bar chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Passenger Count</div><div class="card-sub">TRIPS PER OCCUPANCY</div></div><span class="tag tag-lime">BAR</span></div>
+    <div class="cw" style="height:140px"><canvas id="paxChart" role="img" aria-label="Passenger count distribution"></canvas></div>
+    <div id="paxBars" style="margin-top:10px"></div>
+  </div>
+</div>
+
+</main>
+<div class="footer">Uber Trip Analytics &nbsp;·&nbsp; June 2024 &nbsp;·&nbsp; 103,505 trips processed &nbsp;·&nbsp; New York Metro</div>
+
+<script>
+// Pre-aggregated data
+const HOURLY = [{"hour":0,"trips":1337,"revenue":24449.64,"avg_fare":16.32},{"hour":1,"trips":824,"revenue":15080.18,"avg_fare":16.4},{"hour":2,"trips":474,"revenue":8260.12,"avg_fare":16.14},{"hour":3,"trips":334,"revenue":6250.77,"avg_fare":17.0},{"hour":4,"trips":330,"revenue":5758.14,"avg_fare":15.96},{"hour":5,"trips":981,"revenue":13163.49,"avg_fare":12.08},{"hour":6,"trips":2824,"revenue":34856.59,"avg_fare":10.85},{"hour":7,"trips":4129,"revenue":54497.5,"avg_fare":11.47},{"hour":8,"trips":4962,"revenue":66178.69,"avg_fare":11.46},{"hour":9,"trips":5634,"revenue":77836.37,"avg_fare":11.91},{"hour":10,"trips":5961,"revenue":86668.79,"avg_fare":12.6},{"hour":11,"trips":6583,"revenue":96205.26,"avg_fare":12.71},{"hour":12,"trips":7144,"revenue":102990.79,"avg_fare":12.52},{"hour":13,"trips":7207,"revenue":103448.04,"avg_fare":12.48},{"hour":14,"trips":7671,"revenue":112420.01,"avg_fare":12.77},{"hour":15,"trips":7894,"revenue":119089.3,"avg_fare":13.15},{"hour":16,"trips":7567,"revenue":117683.66,"avg_fare":13.43},{"hour":17,"trips":7791,"revenue":123534.04,"avg_fare":13.6},{"hour":18,"trips":7054,"revenue":107110.1,"avg_fare":13.0},{"hour":19,"trips":5471,"revenue":82047.96,"avg_fare":12.88},{"hour":20,"trips":3685,"revenue":59051.18,"avg_fare":13.84},{"hour":21,"trips":3032,"revenue":50786.12,"avg_fare":14.55},{"hour":22,"trips":2579,"revenue":45607.2,"avg_fare":15.41},{"hour":23,"trips":2037,"revenue":35943.66,"avg_fare":15.49}];
+const DOW = [{"day_of_week":"Monday","trips":14618,"revenue":212194.82},{"day_of_week":"Tuesday","trips":15063,"revenue":223757.63},{"day_of_week":"Wednesday","trips":15691,"revenue":237947.72},{"day_of_week":"Thursday","trips":11146,"revenue":172081.89},{"day_of_week":"Friday","trips":9237,"revenue":145386.24},{"day_of_week":"Saturday","trips":18626,"revenue":275550.09},{"day_of_week":"Sunday","trips":19124,"revenue":281999.21}];
+const VEH = [{"Vehicle":"UberX","trips":38654,"revenue":581640.11,"avg_fare":13.07,"avg_dist":3.39},{"Vehicle":"Uber Comfort","trips":17043,"revenue":253325.46,"avg_fare":12.91,"avg_dist":3.32},{"Vehicle":"Uber Black","trips":16676,"revenue":249513.97,"avg_fare":12.98,"avg_dist":3.36},{"Vehicle":"UberXL","trips":16660,"revenue":248792.95,"avg_fare":12.93,"avg_dist":3.34},{"Vehicle":"Uber Green","trips":14472,"revenue":215645.11,"avg_fare":12.92,"avg_dist":3.36}];
+const PAY = [{"Payment_type":"Amazon Pay","trips":584,"revenue":8556.0},{"Payment_type":"Cash","trips":33344,"revenue":441797.8},{"Payment_type":"Google Pay","trips":180,"revenue":2719.5},{"Payment_type":"Uber Pay","trips":69397,"revenue":1095844.3}];
+const PAX = [{"passenger_count":1,"trips":82165},{"passenger_count":2,"trips":12474},{"passenger_count":3,"trips":3167},{"passenger_count":4,"trips":1134},{"passenger_count":5,"trips":2464},{"passenger_count":6,"trips":2101}];
+const DAILY = [{"date":"2024-06-01","trips":2966,"revenue":43751.23},{"date":"2024-06-02","trips":2645,"revenue":40152.44},{"date":"2024-06-03","trips":2537,"revenue":36366.77},{"date":"2024-06-04","trips":2824,"revenue":41422.85},{"date":"2024-06-05","trips":2888,"revenue":45133.67},{"date":"2024-06-06","trips":2436,"revenue":39343.37},{"date":"2024-06-07","trips":2094,"revenue":32852.79},{"date":"2024-06-08","trips":3476,"revenue":50675.83},{"date":"2024-06-09","trips":3766,"revenue":54821.09},{"date":"2024-06-10","trips":3714,"revenue":53086.14},{"date":"2024-06-11","trips":3699,"revenue":54207.85},{"date":"2024-06-12","trips":3809,"revenue":56721.69},{"date":"2024-06-13","trips":2661,"revenue":39962.74},{"date":"2024-06-14","trips":1929,"revenue":30398.85},{"date":"2024-06-15","trips":3380,"revenue":50239.62},{"date":"2024-06-16","trips":3588,"revenue":52394.77},{"date":"2024-06-17","trips":3731,"revenue":54552.16},{"date":"2024-06-18","trips":3807,"revenue":57548.17},{"date":"2024-06-19","trips":4052,"revenue":62421.15},{"date":"2024-06-20","trips":2765,"revenue":42192.68},{"date":"2024-06-21","trips":2385,"revenue":38335.22},{"date":"2024-06-22","trips":4218,"revenue":62317.74},{"date":"2024-06-23","trips":4443,"revenue":64882.56},{"date":"2024-06-24","trips":4636,"revenue":68189.75},{"date":"2024-06-25","trips":4733,"revenue":70578.76},{"date":"2024-06-26","trips":4942,"revenue":73671.21},{"date":"2024-06-27","trips":3284,"revenue":50583.1},{"date":"2024-06-28","trips":2829,"revenue":43799.38},{"date":"2024-06-29","trips":4586,"revenue":68565.67},{"date":"2024-06-30","trips":4682,"revenue":69748.35}];
+const DIST = [{"dist_bucket":"<2mi","trips":44472,"avg_fare":7.54},{"dist_bucket":"2-4mi","trips":35394,"avg_fare":11.66},{"dist_bucket":"4-6mi","trips":10540,"avg_fare":17.74},{"dist_bucket":"6-10mi","trips":8436,"avg_fare":25.29},{"dist_bucket":"10-20mi","trips":4232,"avg_fare":39.08},{"dist_bucket":"20-50mi","trips":427,"avg_fare":69.18},{"dist_bucket":"50+mi","trips":4,"avg_fare":219.0}];
+const FDIST = [{"fare_bucket":"$0-5","trips":752},{"fare_bucket":"$5-10","trips":52560},{"fare_bucket":"$10-15","trips":26023},{"fare_bucket":"$15-20","trips":10141},{"fare_bucket":"$20-30","trips":8685},{"fare_bucket":"$30-50","trips":4488},{"fare_bucket":"$50-100","trips":832},{"fare_bucket":"$100+","trips":24}];
+const TOTAL = {trips:103505, rev:1548917.6, avgFare:12.98, avgDist:3.36, avgDur:13.02, surgeTrips:65819};
+
+const C = {lime:'#b8ff47',cyan:'#00d4ff',violet:'#7c5cfc',amber:'#ffb800',rose:'#ff4d6d',border:'#1f2433',text:'#f0f2f7',muted:'#525c73'};
+const VEH_COLORS = {'UberX':C.lime,'Uber Comfort':C.cyan,'Uber Black':C.violet,'UberXL':C.amber,'Uber Green':'#00e676'};
+const PAY_COLORS = [C.amber, C.lime, C.cyan, C.violet];
+let charts = {};
+
+const tip = {
+  backgroundColor:'#12151c',borderColor:'#1f2433',borderWidth:1,
+  titleColor:'#f0f2f7',bodyColor:'#8892a4',
+  titleFont:{family:'JetBrains Mono',size:10},bodyFont:{family:'Bricolage Grotesque',size:12},
+  padding:10,cornerRadius:8
+};
+const scales = {
+  x:{grid:{color:'rgba(31,36,51,0.8)',lineWidth:1},ticks:{color:'#525c73',font:{family:'JetBrains Mono',size:9}}},
+  y:{grid:{color:'rgba(31,36,51,0.8)',lineWidth:1},ticks:{color:'#525c73',font:{family:'JetBrains Mono',size:9}}}
+};
+
+function mk(id,cfg){if(charts[id])charts[id].destroy();const ctx=document.getElementById(id)?.getContext('2d');if(!ctx)return;charts[id]=new Chart(ctx,cfg)}
+function fmtN(n){if(n>=1e6)return '$'+(n/1e6).toFixed(2)+'M';if(n>=1e3)return '$'+(n/1e3).toFixed(1)+'K';return '$'+n.toFixed(2)}
+function fmtT(n){if(n>=1000)return (n/1000).toFixed(1)+'K';return n.toLocaleString()}
+
+// Filter helpers — since data is pre-aggregated, filters apply to KPIs via scaled ratios
+// For charts we filter VEH/PAY to highlight selected, others use full data
+function getVeh(){return document.getElementById('f-veh').value}
+function getPay(){return document.getElementById('f-pay').value}
+function getPax(){return document.getElementById('f-pax').value}
+function getSurge(){return document.getElementById('f-surge').value}
+
+function applyFilters(){
+  const veh=getVeh(), pay=getPay(), pax=getPax(), surge=getSurge();
+  let data = {trips:TOTAL.trips, rev:TOTAL.rev, avgFare:TOTAL.avgFare, avgDist:TOTAL.avgDist, surgeTrips:TOTAL.surgeTrips};
+
+  // Scale KPIs based on active filters
+  let multiplier=1;
+  if(veh){
+    const v=VEH.find(r=>r.Vehicle===veh);
+    multiplier *= v ? v.trips/TOTAL.trips : 1;
+    if(v){data.avgFare=v.avg_fare; data.avgDist=v.avg_dist}
+  }
+  if(pay){
+    const p=PAY.find(r=>r.Payment_type===pay);
+    multiplier *= p ? p.trips/TOTAL.trips : 1;
+  }
+  if(pax==='1') multiplier *= 82165/TOTAL.trips;
+  else if(pax==='2') multiplier *= 12474/TOTAL.trips;
+  else if(pax==='3') multiplier *= 3167/TOTAL.trips;
+  else if(pax==='4+') multiplier *= (1134+2464+2101)/TOTAL.trips;
+  if(surge==='1') multiplier *= 65819/TOTAL.trips;
+  else if(surge==='0') multiplier *= (103505-65819)/TOTAL.trips;
+
+  data.trips = Math.round(TOTAL.trips * multiplier);
+  data.rev = TOTAL.rev * multiplier;
+  data.surgeTrips = Math.round(TOTAL.surgeTrips * multiplier);
+  return data;
+}
+
+function render(){
+  const d = applyFilters();
+  const veh=getVeh(), pay=getPay();
+
+  // KPIs
+  document.getElementById('kpi-trips').textContent = d.trips.toLocaleString();
+  document.getElementById('kpi-trips-sub').textContent = 'June 2024';
+  document.getElementById('kpi-rev').textContent = fmtN(d.rev);
+  document.getElementById('kpi-rev-sub').textContent = fmtN(d.rev/30)+' / day avg';
+  document.getElementById('kpi-fare').textContent = '$'+d.avgFare.toFixed(2);
+  document.getElementById('kpi-fare-sub').textContent = 'per trip avg';
+  document.getElementById('kpi-dist').textContent = d.avgDist.toFixed(2)+' mi';
+  document.getElementById('kpi-dist-sub').textContent = 'per trip avg';
+  const surgeRate = d.trips>0 ? (d.surgeTrips/d.trips*100) : 0;
+  document.getElementById('kpi-surge').textContent = surgeRate.toFixed(1)+'%';
+  document.getElementById('kpi-surge-sub').textContent = d.surgeTrips.toLocaleString()+' surge trips';
+  document.getElementById('hdr-trips').textContent = d.trips.toLocaleString()+' trips';
+
+  // Daily chart
+  mk('dailyChart',{type:'line',data:{labels:DAILY.map(r=>r.date.slice(5)),datasets:[
+    {label:'Trips',data:DAILY.map(r=>r.trips),borderColor:C.lime,backgroundColor:'rgba(184,255,71,0.07)',fill:true,tension:0.3,pointRadius:2,borderWidth:2,yAxisID:'y'},
+    {label:'Revenue',data:DAILY.map(r=>r.revenue),borderColor:C.cyan,backgroundColor:'rgba(0,212,255,0.05)',fill:true,tension:0.3,pointRadius:2,borderWidth:1.5,borderDash:[4,3],yAxisID:'y2'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'JetBrains Mono',size:9},boxWidth:10,padding:12}},tooltip:{...tip,callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.datasetIndex===0?ctx.raw.toLocaleString():fmtN(ctx.raw))}}},scales:{x:{...scales.x,ticks:{...scales.x.ticks,maxTicksLimit:10}},y:{...scales.y,position:'left',title:{display:true,text:'TRIPS',color:'#525c73',font:{size:8,family:'JetBrains Mono'}}},y2:{...scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'REVENUE',color:'#525c73',font:{size:8,family:'JetBrains Mono'}}}}}});
+
+  // DOW chart
+  const dowColors = DOW.map(()=>C.violet+'cc');
+  mk('dowChart',{type:'bar',data:{labels:DOW.map(r=>r.day_of_week.slice(0,3)),datasets:[{label:'Trips',data:DOW.map(r=>r.trips),backgroundColor:dowColors,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:ctx=>ctx.raw.toLocaleString()+' trips'}}},scales:{x:{...scales.x},y:{...scales.y,ticks:{...scales.y.ticks,callback:v=>fmtT(v)}}}}});
+
+  // Hourly chart
+  mk('hourChart',{type:'line',data:{labels:HOURLY.map(r=>r.hour===0?'12am':r.hour<12?r.hour+'am':r.hour===12?'12pm':(r.hour-12)+'pm'),datasets:[
+    {label:'Trips',data:HOURLY.map(r=>r.trips),borderColor:C.cyan,backgroundColor:'rgba(0,212,255,0.1)',fill:true,tension:0.4,pointRadius:0,borderWidth:2},
+    {label:'Avg Fare',data:HOURLY.map(r=>r.avg_fare),borderColor:C.amber,tension:0.4,pointRadius:0,borderWidth:1.5,borderDash:[4,3],yAxisID:'y2'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'JetBrains Mono',size:9},boxWidth:10,padding:10}},tooltip:{...tip,callbacks:{label:ctx=>ctx.datasetIndex===0?ctx.raw.toLocaleString()+' trips':'$'+ctx.raw.toFixed(2)+' avg'}}},scales:{x:{...scales.x,ticks:{...scales.x.ticks,maxTicksLimit:12}},y:{...scales.y},y2:{...scales.y,position:'right',grid:{drawOnChartArea:false}}}}});
+
+  // Vehicle table
+  const vehFiltered = veh ? VEH.filter(r=>r.Vehicle===veh) : VEH;
+  const maxTrips = Math.max(...VEH.map(r=>r.trips));
+  const totalTrips = VEH.reduce((a,r)=>a+r.trips,0);
+  document.querySelector('#vehTable tbody').innerHTML = VEH.map(r=>{
+    const col = VEH_COLORS[r.Vehicle]||C.lime;
+    const pct = (r.trips/totalTrips*100).toFixed(1);
+    const opacity = (!veh || r.Vehicle===veh) ? 1 : 0.35;
+    return `<tr style="opacity:${opacity}">
+      <td><span class="veh-dot" style="background:${col}"></span>${r.Vehicle}</td>
+      <td>${r.trips.toLocaleString()}</td>
+      <td><span class="veh-bar-wrap"><span class="veh-bar" style="width:${(r.trips/maxTrips*100).toFixed(0)}%;background:${col}"></span></span>${pct}%</td>
+      <td>$${r.avg_fare.toFixed(2)}</td>
+      <td>$${(r.revenue/1000).toFixed(1)}K</td>
+    </tr>`;
+  }).join('');
+
+  // Payment donut
+  const payData = pay ? PAY.filter(r=>r.Payment_type===pay) : PAY;
+  const payTotal = PAY.reduce((a,r)=>a+r.trips,0);
+  mk('payChart',{type:'doughnut',data:{labels:PAY.map(r=>r.Payment_type),datasets:[{data:PAY.map(r=>r.trips),backgroundColor:PAY_COLORS,borderColor:'#0d0f14',borderWidth:3,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:true,position:'bottom',labels:{color:'#8892a4',font:{family:'JetBrains Mono',size:9},boxWidth:10,padding:10}},tooltip:{...tip,callbacks:{label:ctx=>`${ctx.label}: ${(ctx.raw/payTotal*100).toFixed(1)}% (${ctx.raw.toLocaleString()})`}}}}});
+
+  // Fare histogram
+  mk('fareChart',{type:'bar',data:{labels:FDIST.map(r=>r.fare_bucket),datasets:[{label:'Trips',data:FDIST.map(r=>r.trips),backgroundColor:FDIST.map((_,i)=>[C.lime,C.lime,C.cyan,C.cyan,C.violet,C.violet,C.rose,C.rose][i]+'aa'),borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:ctx=>ctx.raw.toLocaleString()+' trips'}}},scales:{x:{...scales.x,ticks:{...scales.x.ticks,maxRotation:30}},y:{...scales.y,ticks:{...scales.y.ticks,callback:v=>fmtT(v)}}}}});
+
+  // Distance chart
+  mk('distChart',{type:'bar',data:{labels:DIST.map(r=>r.dist_bucket),datasets:[
+    {label:'Trips',data:DIST.map(r=>r.trips),backgroundColor:C.cyan+'88',borderRadius:4,yAxisID:'y'},
+    {label:'Avg Fare',data:DIST.map(r=>r.avg_fare),backgroundColor:C.amber+'88',borderRadius:4,yAxisID:'y2'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#8892a4',font:{family:'JetBrains Mono',size:9},boxWidth:10,padding:8}},tooltip:{...tip,callbacks:{label:ctx=>ctx.datasetIndex===0?ctx.raw.toLocaleString()+' trips':'$'+ctx.raw.toFixed(2)+' avg'}}},scales:{x:{...scales.x},y:{...scales.y,ticks:{...scales.y.ticks,callback:v=>fmtT(v)}},y2:{...scales.y,position:'right',grid:{drawOnChartArea:false}}}}});
+
+  // Passenger bar chart (simple)
+  const maxPax = Math.max(...PAX.map(r=>r.trips));
+  const totalPax = PAX.reduce((a,r)=>a+r.trips,0);
+  mk('paxChart',{type:'bar',data:{labels:PAX.map(r=>r.passenger_count+' pax'),datasets:[{label:'Trips',data:PAX.map(r=>r.trips),backgroundColor:PAX.map(r=>C.violet+(r.passenger_count===1?'':'88')),borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:ctx=>`${ctx.raw.toLocaleString()} trips (${(ctx.raw/totalPax*100).toFixed(1)}%)`}}},scales:{x:{...scales.x},y:{...scales.y,ticks:{...scales.y.ticks,callback:v=>fmtT(v)}}}}});
+}
+
+function resetFilters(){
+  ['f-veh','f-pay','f-pax','f-surge'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
